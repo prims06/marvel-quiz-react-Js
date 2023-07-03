@@ -1,4 +1,5 @@
 import React from "react";
+import {FaChevronRight} from 'react-icons/fa';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Levels from "../Levels";
@@ -7,22 +8,26 @@ import { QuizMarvel } from "../quizMarvel";
 import QuizOver from "../QuizOver";
 
 class Quiz extends React.Component {
-  state = {
-    levelNames: ["debutant", "confirme", "expert"],
-    quizLevel: 0,
-    quizEnd: false,
-    maxQuestions: 10,
-    storedQuestions: [],
-    question: null,
-    options: [],
-    idQuestion: 0,
-    btnDisabled: true,
-    selectedAnswer: null,
-    score: 0,
-    showedWelcomemsg: false,
-  };
+  constructor(props) {
+    super(props);
 
-  storedDataRef = React.createRef();
+    this.initState = {
+      levelNames: ["debutant", "confirme", "expert"],
+      quizLevel: 0,
+      quizEnd: false,
+      maxQuestions: 10,
+      storedQuestions: [],
+      question: null,
+      options: [],
+      idQuestion: 9,
+      btnDisabled: true,
+      selectedAnswer: null,
+      score: 7,
+      showedWelcomemsg: false,
+    };
+    this.state = this.initState;
+    this.storedDataRef = React.createRef();
+  }
 
   loadQuestions = (level) => {
     const fetchedQuestions = QuizMarvel[0].quizz[level];
@@ -35,7 +40,7 @@ class Quiz extends React.Component {
         storedQuestions: questionsWithoutAnswer,
       });
     } else {
-      this.setState({maxQuestions:fetchedQuestions.length})
+      this.setState({ maxQuestions: fetchedQuestions.length });
     }
   };
   componentDidMount() {
@@ -57,10 +62,22 @@ class Quiz extends React.Component {
         selectedAnswer: null,
       });
     }
-    
-    if (this.props.userData !== null && !this.state.showedWelcomemsg) {
+
+    if (
+      this.props.userData !== null &&
+      !this.state.showedWelcomemsg &&
+      this.state.quizLevel === 0
+    ) {
       this.showWelcomemsg(this.props.userData.pseudo);
       this.setState({ showedWelcomemsg: true });
+    }
+
+    if (this.state.quizEnd !== prevState.quizEnd) {
+      const gradePercentage = this.getPercentage(
+        this.state.maxQuestions,
+        this.state.score
+      );
+      this.gameOver(gradePercentage);
     }
   }
   submitAnswer = (selectedAnswer) => {
@@ -77,15 +94,22 @@ class Quiz extends React.Component {
       draggable: false,
     });
 
-  gameOver = () => {
-    this.setState({
-      quizEnd: true,
-    });
+  gameOver = (gradePercentage) => {
+    if (gradePercentage >= 50) {
+      this.setState({
+        quizLevel: this.state.quizLevel + 1,
+        percent: gradePercentage,
+      });
+    } else {
+      this.setState({
+        percent: gradePercentage,
+      });
+    }
   };
 
   setNextQuestion = () => {
     if (this.state.idQuestion === this.state.maxQuestions - 1) {
-      this.gameOver();
+      this.setState({ quizEnd: true });
     } else {
       this.setState((prevState) => ({
         idQuestion: prevState.idQuestion + 1,
@@ -116,20 +140,36 @@ class Quiz extends React.Component {
       });
     }
   };
+  loadNextLevel = (quizLevel) => {
+    this.setState({ ...this.initState, quizLevel });
+    this.loadQuestions(this.state.levelNames[quizLevel]);
+  };
+  getPercentage = (maxQ, score) => (score / maxQ) * 100;
   render() {
-    return !this.state.quizEnd ? (
-      <QuizOver ref={this.storedDataRef}/>
+    return this.state.quizEnd ? (
+      <QuizOver
+        ref={this.storedDataRef}
+        levelNames={this.state.levelNames}
+        score={this.state.score}
+        maxQuestions={this.state.maxQuestions}
+        quizLevel={this.state.quizLevel}
+        percent={this.state.percent}
+        loadNextLevel={this.loadNextLevel}
+      />
     ) : (
       <div>
         <ToastContainer />
 
-        <Levels />
+        <Levels activeStep={this.state.quizLevel} levels={this.state.levelNames} />
         <ProgressBar
-          level={`${this.state.idQuestion}/${this.state.storedQuestions.length}`}
+          level={`${this.state.idQuestion + 1}/${
+            this.state.storedQuestions.length
+          }`}
           progression={
             (this.state.idQuestion * 100) / this.state.storedQuestions.length
           }
         />
+        
         <h2>{this.state.question}</h2>
         {this.state.options.map((option, index) => (
           <p
@@ -139,7 +179,7 @@ class Quiz extends React.Component {
             }`}
             onClick={() => this.submitAnswer(option)}
           >
-            {option}
+            <FaChevronRight /> {option}
           </p>
         ))}
 

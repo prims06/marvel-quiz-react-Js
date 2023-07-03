@@ -1,4 +1,5 @@
 import React from "react";
+import { IconContext } from "react-icons";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 import Header from "../Header";
@@ -13,6 +14,7 @@ import ForgetPassword from "../ForgetPassword";
 function AppMarvel() {
   return (
     <Router>
+      <IconContext.Provider value={{style:{verticalAlign: 'middle'}}}>
       <Header />
       <Routes>
         <Route path="/signup" component={SignUp} element={<SignUp />} errorElement={<ErrorPage />}/>
@@ -24,6 +26,7 @@ function AppMarvel() {
       </Routes>
 
       <Footer />
+      </IconContext.Provider>
     </Router>
   );
 }
